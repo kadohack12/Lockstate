@@ -1,0 +1,29 @@
+* text=auto
+
+# Go files
+*.go text eol=lf
+
+# Makefiles
+Makefile text eol=lf
+*.mk text eol=lf
+
+# Markdown
+*.md text eol=lf
+*.markdown text eol=lf
+
+# YAML
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# JSON
+*.json text eol=lf
+
+# Binaires
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# OS
+.DS_Store binary
+Thumbs.db binary

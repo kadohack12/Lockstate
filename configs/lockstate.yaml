@@ -1,0 +1,19 @@
+# Default Lockstate Configuration
+
+scanner:
+  timeout: 30s
+  exclude_paths:
+    - /tmp
+    - /var/tmp
+
+modules:
+  credentials:
+    enabled: true
+  ports:
+    enabled: true
+  services:
+    enabled: true
+
+report:
+  format: json
+  output_path: report.json

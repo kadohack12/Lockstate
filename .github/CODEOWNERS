@@ -1,0 +1,21 @@
+# LockState - Codeowners
+
+# Propriétaires principaux
+* @KADOHACK12
+
+# Documentation
+docs/ @KADOHACK12
+*.md @KADOHACK12
+
+# Configuration et Build
+Makefile @KADOHACK12
+go.mod @KADOHACK12
+go.sum @KADOHACK12
+.github/ @KADOHACK12
+
+# Modules spécifiques
+internal/collector/ @KADOHACK12
+internal/cve/ @KADOHACK12
+internal/detector/ @KADOHACK12
+internal/scanner/ @KADOHACK12
+internal/scoring/ @KADOHACK12

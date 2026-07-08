@@ -1,0 +1,32 @@
+# Binaires compilés
+/build/
+*.exe
+lockstate
+lockstate-*
+
+# Base de données CVE locale (générée, pas versionnée)
+/data/*.db
+/data/*.sqlite
+
+# Rapports générés
+*.html
+!internal/report/templates/report.html
+
+# Go
+/vendor/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporaires
+*.tmp
+*.log
+*.bak

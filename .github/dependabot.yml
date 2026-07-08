@@ -1,0 +1,17 @@
+# LockState - Dependabot Configuration
+
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - "KADOHACK12"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"

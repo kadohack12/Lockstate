@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LockState — Rapport d'audit</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f6fa; padding: 40px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        .header { background: #2c3e50; color: white; padding: 30px; border-radius: 10px 10px 0 0; }
+        .header h1 { font-size: 28px; }
+        .header p { opacity: 0.8; margin-top: 5px; }
+        
+        .score-section { background: white; padding: 30px; text-align: center; }
+        .score-circle {
+            width: 150px; height: 150px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 20px auto; font-size: 48px; font-weight: bold;
+            color: white;
+        }
+        .score-critical { background: #e74c3c; }
+        .score-high { background: #e67e22; }
+        .score-medium { background: #f39c12; }
+        .score-low { background: #27ae60; }
+        
+        .alerts { background: white; padding: 30px; }
+        .alerts h2 { margin-bottom: 15px; }
+        .alert { padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 5px solid; }
+        .alert-critical { background: #fdf0ef; border-color: #e74c3c; }
+        .alert-high { background: #fef5e7; border-color: #e67e22; }
+        .alert-medium { background: #fef9e7; border-color: #f39c12; }
+        .alert-low { background: #eafaf1; border-color: #27ae60; }
+        .alert-message { font-weight: 600; }
+        
+        .breakdown { background: white; padding: 30px; }
+        .breakdown h2 { margin-bottom: 15px; }
+        .breakdown table { width: 100%; border-collapse: collapse; }
+        .breakdown th { background: #ecf0f1; padding: 12px; text-align: left; }
+        .breakdown td { padding: 12px; border-bottom: 1px solid #ecf0f1; }
+        .bar { height: 20px; background: #ecf0f1; border-radius: 10px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s; }
+        .bar-green { background: #27ae60; }
+        .bar-orange { background: #e67e22; }
+        .bar-red { background: #e74c3c; }
+        
+        .system-info { background: white; padding: 30px; border-radius: 0 0 10px 10px; }
+        .system-info h2 { margin-bottom: 15px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-label { font-weight: 600; color: #7f8c8d; }
+        
+        .footer { text-align: center; padding: 20px; color: #95a5a6; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 LockState — Rapport d'audit</h1>
+            <p>{{.Hostname}} · {{.OS}} · {{.Date}}</p>
+        </div>
+
+        <div class="score-section">
+            <h2>Score de risque global</h2>
+            <div class="score-circle {{.ScoreClass}}">{{.Score}}/100</div>
+            <p>{{.ScoreLabel}}</p>
+        </div>
+
+        {{if .Alerts}}
+        <div class="alerts">
+            <h2>Alertes détectées</h2>
+            {{range .Alerts}}
+            <div class="alert alert-{{.Severity}}">
+                <div class="alert-message">{{.Message}}</div>
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+
+        <div class="breakdown">
+            <h2>Détail par catégorie</h2>
+            <table>
+                <tr>
+                    <th>Catégorie</th>
+                    <th>Score</th>
+                    <th>Barre</th>
+                    <th>Poids</th>
+                </tr>
+                {{range .Breakdown}}
+                <tr>
+                    <td>{{.Category}}</td>
+                    <td>{{.Score}}/100</td>
+                    <td>
+                        <div class="bar">
+                            <div class="bar-fill {{if ge .Score 70}}bar-green{{else if ge .Score 40}}bar-orange{{else}}bar-red{{end}}" 
+                                 style="width: {{.Score}}%"></div>
+                        </div>
+                    </td>
+                    <td>{{.Weight}}%</td>
+                </tr>
+                {{end}}
+            </table>
+        </div>
+
+        <div class="system-info">
+            <h2>Informations système</h2>
+            <div class="info-grid">
+                <div><span class="info-label">Hôte</span><br>{{.Hostname}}</div>
+                <div><span class="info-label">OS</span><br>{{.OS}}</div>
+                <div><span class="info-label">Uptime</span><br>{{.Uptime}}</div>
+                <div><span class="info-label">Pare-feu</span><br>{{.FirewallStatus}}</div>
+                <div><span class="info-label">Chiffrement</span><br>{{.EncryptionStatus}}</div>
+                <div><span class="info-label">Utilisateurs</span><br>{{.UserCount}}</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Généré par LockState · Outil d'audit de sécurité · Données non persistées
+        </div>
+    </div>
+</body>
+</html>
