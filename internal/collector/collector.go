@@ -42,6 +42,7 @@ type PortInfo struct {
 	Proto   string `json:"proto"`
 	Process string `json:"process,omitempty"`
 	Service string `json:"service,omitempty"`
+	Risk    string `json:"risk,omitempty"` // low, medium, high
 }
 
 type FirewallState struct {
@@ -52,10 +53,10 @@ type FirewallState struct {
 }
 
 type EncryptionInfo struct {
-	Enabled      bool   `json:"enabled"`
-	Type         string `json:"type"` // bitlocker, luks, filevault, none
-	DrivesCount  int    `json:"drives_count"`
-	DrivesTotal  int    `json:"drives_total"`
+	Enabled     bool   `json:"enabled"`
+	Type        string `json:"type"` // bitlocker, luks, filevault, none
+	DrivesCount int    `json:"drives_count"`
+	DrivesTotal int    `json:"drives_total"`
 }
 
 type PatchInfo struct {
@@ -71,24 +72,16 @@ type SoftwareInfo struct {
 	Vendor  string `json:"vendor"`
 }
 
-// Collect est l'unique point d'entrée. runtime.GOOS décide de l'implémentation.
+// Collect est l'unique point d'entrée. goos est le nom de l'OS (runtime.GOOS), reporté
+// dans SystemInfo.OS. L'implémentation est choisie à la compilation par les build tags
+// (voir platform_linux.go, platform_windows.go, platform_other.go) : chaque binaire ne
+// contient que le collecteur de son propre OS.
 func Collect(goos string) (*SystemInfo, error) {
 	info := &SystemInfo{
 		OS: goos,
 	}
 
-	var err error
-
-	switch goos {
-	case "windows":
-		err = collectWindows(info)
-	case "linux":
-		err = collectLinux(info)
-	default:
-		return nil, fmt.Errorf("OS non supporté : %s", goos)
-	}
-
-	if err != nil {
+	if err := collectPlatform(info); err != nil {
 		return nil, fmt.Errorf("collecte système : %w", err)
 	}
 

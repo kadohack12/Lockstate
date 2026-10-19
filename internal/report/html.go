@@ -107,17 +107,17 @@ func generateJSON(sysInfo *collector.SystemInfo, score *scoring.ScoreResult, out
 	os.MkdirAll(filepath.Dir(outputPath), 0755)
 
 	type JSONReport struct {
-		Hostname         string                  `json:"hostname"`
-		OS               string                  `json:"os"`
-		Date             string                  `json:"date"`
-		Score            int                     `json:"score"`
-		ScoreLabel       string                  `json:"score_label"`
-		Alerts           []scoring.Alert         `json:"alerts"`
-		Breakdown        []scoring.ScoreItem     `json:"breakdown"`
-		System           *collector.SystemInfo   `json:"system"`
-		FirewallStatus   string                  `json:"firewall_status"`
-		EncryptionStatus string                  `json:"encryption_status"`
-		UserCount        int                     `json:"user_count"`
+		Hostname         string                `json:"hostname"`
+		OS               string                `json:"os"`
+		Date             string                `json:"date"`
+		Score            int                   `json:"score"`
+		ScoreLabel       string                `json:"score_label"`
+		Alerts           []scoring.Alert       `json:"alerts"`
+		Breakdown        []scoring.ScoreItem   `json:"breakdown"`
+		System           *collector.SystemInfo `json:"system"`
+		FirewallStatus   string                `json:"firewall_status"`
+		EncryptionStatus string                `json:"encryption_status"`
+		UserCount        int                   `json:"user_count"`
 	}
 
 	fwStatus := "Disabled"

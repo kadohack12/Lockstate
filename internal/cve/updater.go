@@ -42,9 +42,9 @@ CREATE TABLE IF NOT EXISTS metadata (
 // ── Structures NVD API v2.0 ──
 
 type nvdResponse struct {
-	ResultsPerPage int      `json:"resultsPerPage"`
-	StartIndex     int      `json:"startIndex"`
-	TotalResults   int      `json:"totalResults"`
+	ResultsPerPage  int       `json:"resultsPerPage"`
+	StartIndex      int       `json:"startIndex"`
+	TotalResults    int       `json:"totalResults"`
 	Vulnerabilities []nvdVuln `json:"vulnerabilities"`
 }
 

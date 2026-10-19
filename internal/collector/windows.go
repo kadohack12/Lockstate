@@ -7,9 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
-	"unsafe"
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
@@ -72,14 +70,8 @@ func getWindowsVersion() string {
 }
 
 func getWindowsKernel() string {
-	// RtlGetVersion pour le numéro de build exact
-	var v windows.OsVersionInfoEx
-	v.OSVersionInfoSize = uint32(unsafe.Sizeof(v))
-	// NTSTATUS → 0 = STATUS_SUCCESS
-	ret := windows.RtlGetVersion(&v)
-	if ret != 0 {
-		return "unknown"
-	}
+	// RtlGetVersion (x/sys) retourne la version réelle de l'OS, sans passer par les manifestes.
+	v := windows.RtlGetVersion()
 	return fmt.Sprintf("%d.%d.%d", v.MajorVersion, v.MinorVersion, v.BuildNumber)
 }
 
@@ -91,135 +83,141 @@ func getUptime() time.Duration {
 	return time.Duration(ret) * time.Millisecond
 }
 
-	// getWindowsUsers récupère la liste des utilisateurs locaux
-	func getWindowsUsers() []UserInfo {
-		cmd := exec.Command("net", "user")
-		output, err := cmd.Output()
-		if err != nil {
-			return nil
-		}
-		
-		var users []UserInfo
-		lines := strings.Split(string(output), "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line == "" || strings.Contains(line, "---") {
-				continue
-			}
-			users = append(users, UserInfo{
-				Name:    line,
-				Enabled: true,
-			})
-		}
-		return users
-	}
-	
-	// getWindowsAdmins récupère les administrateurs du système
-	func getWindowsAdmins() []string {
-		cmd := exec.Command("net", "localgroup", "Administrators")
-		output, err := cmd.Output()
-		if err != nil {
-			return nil
-		}
-		
-		var admins []string
-		lines := strings.Split(string(output), "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line != "" && !strings.Contains(line, "---") && !strings.Contains(line, "completed successfully") {
-				admins = append(admins, line)
-			}
-		}
-		return admins
-	}
-	
-	// getWindowsServices récupère les services Windows
-	func getWindowsServices() []ServiceInfo {
-		cmd := exec.Command("tasklist", "/svc")
-		output, err := cmd.Output()
-		if err != nil {
-			return nil
-		}
-		
-		var services []ServiceInfo
-		lines := strings.Split(string(output), "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line == "" || strings.Contains(line, "Image Name") {
-				continue
-			}
-			fields := strings.Fields(line)
-			if len(fields) > 0 {
-				services = append(services, ServiceInfo{
-					Name:   fields[0],
-					Status: "running",
-				})
-			}
-		}
-		return services
-	}
-	
-	// getWindowsFirewall récupère l'état du pare-feu Windows
-	func getWindowsFirewall() FirewallState {
-		cmd := exec.Command("netsh", "advfirewall", "show", "allprofiles")
-		output, err := cmd.Output()
-		if err != nil {
-			return FirewallState{Enabled: false}
-		}
-		
-		outputStr := string(output)
-		enabled := strings.Contains(outputStr, "State\t\t\t\tON") || strings.Contains(outputStr, "State ON")
-		return FirewallState{
-			Enabled: enabled,
-		}
-	}
-	
-	// getWindowsPatches récupère la liste des correctifs installés
-	func getWindowsPatches() []PatchInfo {
-		cmd := exec.Command("wmic", "qfe", "list", "brief")
-		output, err := cmd.Output()
-		if err != nil {
-			return nil
-		}
-		
-		var patches []PatchInfo
-		lines := strings.Split(string(output), "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line == "" || strings.Contains(line, "HotFixID") {
-				continue
-			}
-			fields := strings.Fields(line)
-			if len(fields) > 0 {
-				patches = append(patches, PatchInfo{
-					ID: fields[0],
-				})
-			}
-		}
-		return patches
+// getWindowsUsers récupère la liste des utilisateurs locaux
+func getWindowsUsers() []UserInfo {
+	cmd := exec.Command("net", "user")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
 	}
 
-	func getServiceByPort(port int) string {
-		highRiskServices := map[int]string{
-			21:    "FTP",
-			23:    "Telnet",
-			135:   "RPC",
-			139:   "NetBIOS",
-			445:   "SMB",
-			3389:  "RDP",
-			5900:  "VNC",
-			6379:  "Redis",
-			22:    "SSH",
-			80:    "HTTP",
-			443:   "HTTPS",
-			1433:  "MSSQL",
-			3306:  "MySQL",
-			5432:  "PostgreSQL",
+	var users []UserInfo
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.Contains(line, "---") {
+			continue
 		}
-		if svc, ok := highRiskServices[port]; ok {
-			return svc
+		users = append(users, UserInfo{
+			Name:    line,
+			Enabled: true,
+		})
+	}
+	return users
+}
+
+// getWindowsAdmins récupère les administrateurs du système
+func getWindowsAdmins() []string {
+	cmd := exec.Command("net", "localgroup", "Administrators")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	var admins []string
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.Contains(line, "---") && !strings.Contains(line, "completed successfully") {
+			admins = append(admins, line)
 		}
-		return ""
+	}
+	return admins
+}
+
+// getWindowsServices récupère les services Windows
+func getWindowsServices() []ServiceInfo {
+	cmd := exec.Command("tasklist", "/svc")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	var services []ServiceInfo
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.Contains(line, "Image Name") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) > 0 {
+			services = append(services, ServiceInfo{
+				Name:   fields[0],
+				Status: "running",
+			})
+		}
+	}
+	return services
+}
+
+// getWindowsFirewall récupère l'état du pare-feu Windows
+func getWindowsFirewall() FirewallState {
+	cmd := exec.Command("netsh", "advfirewall", "show", "allprofiles")
+	output, err := cmd.Output()
+	if err != nil {
+		return FirewallState{Enabled: false}
+	}
+
+	outputStr := string(output)
+	enabled := strings.Contains(outputStr, "State\t\t\t\tON") || strings.Contains(outputStr, "State ON")
+	return FirewallState{
+		Enabled: enabled,
+	}
+}
+
+// getWindowsPatches récupère la liste des correctifs installés
+func getWindowsPatches() []PatchInfo {
+	cmd := exec.Command("wmic", "qfe", "list", "brief")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	var patches []PatchInfo
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.Contains(line, "HotFixID") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) > 0 {
+			patches = append(patches, PatchInfo{
+				ID: fields[0],
+			})
+		}
+	}
+	return patches
+}
+
+func getServiceByPort(port int) string {
+	highRiskServices := map[int]string{
+		21:   "FTP",
+		23:   "Telnet",
+		135:  "RPC",
+		139:  "NetBIOS",
+		445:  "SMB",
+		3389: "RDP",
+		5900: "VNC",
+		6379: "Redis",
+		22:   "SSH",
+		80:   "HTTP",
+		443:  "HTTPS",
+		1433: "MSSQL",
+		3306: "MySQL",
+		5432: "PostgreSQL",
+	}
+	if svc, ok := highRiskServices[port]; ok {
+		return svc
+	}
+	return ""
+}
+
+func getWindowsPorts() []PortInfo {
+	output, err := exec.Command("netstat", "-ano", "-p", "TCP").Output()
+	if err != nil {
+		return nil
 	}
 
 	var ports []PortInfo
@@ -260,6 +258,7 @@ func getUptime() time.Duration {
 			Port:    port,
 			Proto:   proto,
 			Service: service,
+			Risk:    risk,
 		})
 	}
 

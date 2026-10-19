@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS metadata (
 
 type testCVE struct {
 	ID, Software, Version, VersionEnd, Desc, Ref, Published string
-	CVSS                                                     float64
+	CVSS                                                    float64
 }
 
 func main() {

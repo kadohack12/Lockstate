@@ -131,69 +131,69 @@ func getLinuxAdmins() []string {
 }
 
 // getServiceByPort retourne le service associé au port
-	func getServiceByPort(port int) string {
-		highRiskServices := map[int]string{
-			21:    "FTP",
-			23:    "Telnet",
-			135:   "RPC",
-			139:   "NetBIOS",
-			445:   "SMB",
-			3389:  "RDP",
-			5900:  "VNC",
-			6379:  "Redis",
-			22:    "SSH",
-			80:    "HTTP",
-			443:   "HTTPS",
-			1433:  "MSSQL",
-			3306:  "MySQL",
-			5432:  "PostgreSQL",
-		}
-		if svc, ok := highRiskServices[port]; ok {
-			return svc
-		}
-		return ""
+func getServiceByPort(port int) string {
+	highRiskServices := map[int]string{
+		21:   "FTP",
+		23:   "Telnet",
+		135:  "RPC",
+		139:  "NetBIOS",
+		445:  "SMB",
+		3389: "RDP",
+		5900: "VNC",
+		6379: "Redis",
+		22:   "SSH",
+		80:   "HTTP",
+		443:  "HTTPS",
+		1433: "MSSQL",
+		3306: "MySQL",
+		5432: "PostgreSQL",
 	}
-	
-	// classifyPortRisk classe le risque d'un port
-	func classifyPortRisk(port int) string {
-		highRisk := map[int]bool{
-			21: true, 23: true, 25: true, 135: true, 139: true, 445: true, 3389: true, 5900: true, 6379: true,
-		}
-		mediumRisk := map[int]bool{
-			22: true, 80: true, 443: true, 1433: true, 3306: true, 5432: true, 27017: true,
-		}
-		
-		if highRisk[port] {
-			return "high"
-		}
-		if mediumRisk[port] {
-			return "medium"
-		}
-		return "low"
+	if svc, ok := highRiskServices[port]; ok {
+		return svc
 	}
-	
-	// getLinuxServices récupère les services systemd actifs
-	func getLinuxServices() []ServiceInfo {
-		cmd := exec.Command("systemctl", "list-units", "--type=service", "--active", "--no-pager")
-		output, err := cmd.Output()
-		if err != nil {
-			return nil
-		}
-		
-		var services []ServiceInfo
-		scanner := bufio.NewScanner(strings.NewReader(string(output)))
-		for scanner.Scan() {
-			line := scanner.Text()
-			fields := strings.Fields(line)
-			if len(fields) > 0 && strings.HasSuffix(fields[0], ".service") {
-				services = append(services, ServiceInfo{
-					Name:   strings.TrimSuffix(fields[0], ".service"),
-					Status: "running",
-				})
-			}
-		}
-		return services
+	return ""
+}
+
+// classifyPortRisk classe le risque d'un port
+func classifyPortRisk(port int) string {
+	highRisk := map[int]bool{
+		21: true, 23: true, 25: true, 135: true, 139: true, 445: true, 3389: true, 5900: true, 6379: true,
 	}
+	mediumRisk := map[int]bool{
+		22: true, 80: true, 443: true, 1433: true, 3306: true, 5432: true, 27017: true,
+	}
+
+	if highRisk[port] {
+		return "high"
+	}
+	if mediumRisk[port] {
+		return "medium"
+	}
+	return "low"
+}
+
+// getLinuxServices récupère les services systemd actifs
+func getLinuxServices() []ServiceInfo {
+	cmd := exec.Command("systemctl", "list-units", "--type=service", "--active", "--no-pager")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	var services []ServiceInfo
+	scanner := bufio.NewScanner(strings.NewReader(string(output)))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		if len(fields) > 0 && strings.HasSuffix(fields[0], ".service") {
+			services = append(services, ServiceInfo{
+				Name:   strings.TrimSuffix(fields[0], ".service"),
+				Status: "running",
+			})
+		}
+	}
+	return services
+}
 
 func getLinuxPorts() []PortInfo {
 	tcpData, err := ioutil.ReadFile("/proc/net/tcp")
@@ -236,6 +236,7 @@ func getLinuxPorts() []PortInfo {
 			Port:    int(port),
 			Proto:   "tcp",
 			Service: service,
+			Risk:    risk,
 		})
 	}
 
