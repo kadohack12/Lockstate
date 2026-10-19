@@ -1,8 +1,8 @@
 # Binaires compilés
 /build/
 *.exe
-lockstate
-lockstate-*
+/lockstate
+/lockstate-*
 
 # Base de données CVE locale (générée, pas versionnée)
 /data/*.db
@@ -16,6 +16,7 @@ lockstate-*
 /vendor/
 
 # IDE
+.vscode/
 .idea/
 *.swp
 *.swo
