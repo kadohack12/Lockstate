@@ -59,7 +59,7 @@ var patterns = []struct {
 	{"password_in_ini", regexp.MustCompile(`(?i)^\s*password\s*[=:]\s*.+$`), "high"},
 	{"db_password", regexp.MustCompile(`(?i)DB_PASSWORD\s*[=:]\s*\S+`), "high"},
 	{"connection_string", regexp.MustCompile(`(?i)(connection|conn)(string)?\s*[=:].*password\s*=\s*\S+`), "high"},
-	{"private_key", regexp.MustCompile(`-----BEGIN\s+(RSA|DSA|EC|OPENSSH|PRIVATE)\s+KEY-----`), "critical"},
+	{"private_key", regexp.MustCompile(`-----BEGIN\s+((RSA|DSA|EC|OPENSSH|ENCRYPTED)\s+)?PRIVATE\s+KEY-----`), "critical"},
 	{"api_key", regexp.MustCompile(`(?i)(api[-_]?key|api[-_]?secret|access[-_]?key|secret[-_]?key)\s*[=:]\s*\S{16,}`), "high"},
 	{"aws_access_key", regexp.MustCompile(`(?i)AKIA[0-9A-Z]{16}`), "critical"},
 	{"github_token", regexp.MustCompile(`(?i)ghp_[a-zA-Z0-9]{36}`), "critical"},
@@ -206,7 +206,7 @@ func scanFile(path string, cfg Config) []Finding {
 
 		for _, p := range patterns {
 			if matches := p.Re.FindString(line); matches != "" {
-				snippet := truncateSnippet(line, 80)
+				snippet := maskSnippet(line)
 
 				findings = append(findings, Finding{
 					FilePath:    path,
@@ -223,11 +223,18 @@ func scanFile(path string, cfg Config) []Finding {
 	return findings
 }
 
-func truncateSnippet(line string, maxLen int) string {
-	runes := []rune(line)
-	if len(runes) <= maxLen {
-		return line
+// maskSnippet produit un extrait qui ne contient jamais la valeur du secret.
+// Si la ligne a la forme « clé = valeur » ou « "clé": valeur », seule la clé est conservée.
+// Sinon, seuls les 4 premiers caractères sont gardés.
+func maskSnippet(line string) string {
+	const mask = " [masqué]"
+	trimmed := strings.TrimSpace(line)
+	if i := strings.IndexAny(trimmed, "=:"); i >= 0 && i < 32 {
+		return trimmed[:i+1] + mask
 	}
-	prefix := string(runes[:30])
-	return prefix + "...[masqué]..."
+	runes := []rune(trimmed)
+	if len(runes) > 4 {
+		runes = runes[:4]
+	}
+	return string(runes) + "…" + mask
 }

@@ -102,17 +102,16 @@ func Calculate(input Input, mode Mode) *ScoreResult {
 	{
 		score := 100
 		if input.System != nil {
-			for _, p := range input.System.Patches {
-				t, err := time.Parse("2006-01-02", p.InstalledOn[:10])
-				if err == nil && time.Since(t) > 30*24*time.Hour {
-					score = max(0, 100-int(time.Since(t).Hours()/24)*2)
-					if score < 30 {
-						result.Alerts = append(result.Alerts, Alert{
-							Severity: "high",
-							Message:  fmt.Sprintf("Dernière mise à jour il y a %.0f jours", time.Since(t).Hours()/24),
-						})
-					}
-					break
+			// Seul le correctif le plus récent compte. Les dates absentes ou illisibles
+			// (le collecteur Windows ne les renseigne pas encore) sont ignorées.
+			if newest, ok := newestPatchDate(input.System.Patches); ok && time.Since(newest) > 30*24*time.Hour {
+				days := time.Since(newest).Hours() / 24
+				score = max(0, 100-int(days)*2)
+				if score < 30 {
+					result.Alerts = append(result.Alerts, Alert{
+						Severity: "high",
+						Message:  fmt.Sprintf("Dernière mise à jour il y a %.0f jours", days),
+					})
 				}
 			}
 		}
@@ -258,6 +257,26 @@ func Calculate(input Input, mode Mode) *ScoreResult {
 	}
 
 	return result
+}
+
+// newestPatchDate retourne la date d'installation la plus récente parmi les correctifs
+// dont la date est exploitable (format YYYY-MM-DD, éventuellement suivi d'une heure).
+func newestPatchDate(patches []collector.PatchInfo) (time.Time, bool) {
+	var newest time.Time
+	found := false
+	for _, p := range patches {
+		if len(p.InstalledOn) < len("2006-01-02") {
+			continue
+		}
+		t, err := time.Parse("2006-01-02", p.InstalledOn[:10])
+		if err != nil {
+			continue
+		}
+		if !found || t.After(newest) {
+			newest, found = t, true
+		}
+	}
+	return newest, found
 }
 
 func max(a, b int) int {
