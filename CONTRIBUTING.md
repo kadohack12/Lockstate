@@ -32,7 +32,7 @@ go build -o lockstate ./cmd/lockstate/
 
 #### Développer
 
-1. Créez une branche depuis `develop` :
+1. Créez une branche depuis `master` :
    ```bash
    git checkout -b feature/ma-fonctionnalite
    ```
@@ -42,7 +42,7 @@ go build -o lockstate ./cmd/lockstate/
    git commit -m "feat: ajouter nouvelle détection"
    ```
 
-3. Poussez et ouvrez une PR vers `develop`
+3. Poussez et ouvrez une PR vers `master`
 
 #### Standards de code
 

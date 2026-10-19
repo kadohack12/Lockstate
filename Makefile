@@ -2,11 +2,12 @@
 
 APP_NAME = lockstate
 BUILD_DIR = build
-VERSION = 0.1.0
+VERSION ?= 0.1.0
 
-.PHONY: all clean windows linux darwin
+.PHONY: all clean windows linux darwin release test
 
-all: windows linux darwin
+# macOS exclu de `all` : le collecteur Darwin n'existe pas encore (voir la roadmap).
+all: windows linux
 
 windows:
 	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.Version=$(VERSION)" \
@@ -21,10 +22,14 @@ darwin:
 		-o $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-darwin-amd64 ./cmd/lockstate/
 
 # Compilation avec stripping symboles (binaire plus petit, plus dur à reverse)
-release: windows linux darwin
+release: all
 	strip $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-amd64
 	upx --best $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-windows-amd64.exe 2>/dev/null || true
 	ls -lh $(BUILD_DIR)/
+
+test:
+	go vet ./...
+	go test ./...
 
 clean:
 	rm -rf $(BUILD_DIR)/
