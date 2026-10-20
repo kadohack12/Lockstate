@@ -1,0 +1,58 @@
+name: Tidy and verify (temporary)
+
+# Workflow ponctuel : exécute `go mod tidy` avec accès réseau, commite go.mod/go.sum,
+# puis lance vet (3 OS) et les tests avec les vrais modules. À supprimer une fois go.mod corrigé.
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/tidy.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: go mod tidy
+        run: |
+          if ! go mod tidy >/tmp/tidy.log 2>&1; then
+            while IFS= read -r l; do echo "::error::tidy: ${l//%/%25}"; done </tmp/tidy.log
+            exit 1
+          fi
+          git diff --stat go.mod go.sum | while IFS= read -r l; do echo "::notice::diff: $l"; done
+
+      - name: Commit go.mod / go.sum
+        run: |
+          if ! git diff --quiet go.mod go.sum; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add go.mod go.sum
+            git commit -m "chore: go mod tidy"
+            git push
+          fi
+
+      - name: Vet (linux, windows, darwin)
+        run: |
+          fail=0
+          for os in linux windows darwin; do
+            if ! out=$(GOOS=$os go vet ./... 2>&1); then
+              fail=1
+              while IFS= read -r l; do echo "::error::vet $os: ${l//%/%25}"; done <<<"$out"
+            fi
+          done
+          exit $fail
+
+      - name: Tests
+        run: |
+          if ! out=$(go test -race -count=1 ./... 2>&1); then
+            while IFS= read -r l; do echo "::error::test: ${l//%/%25}"; done <<<"$out"
+            exit 1
+          fi
+          echo "$out" | while IFS= read -r l; do echo "::notice::test: $l"; done

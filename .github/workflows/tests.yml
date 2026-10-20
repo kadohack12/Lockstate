@@ -5,6 +5,7 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -16,6 +17,14 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+
+      - name: go.mod à jour
+        run: |
+          go mod tidy
+          if ! git diff --exit-code go.mod go.sum >/dev/null; then
+            echo "::error file=go.mod::go.mod/go.sum ne sont pas à jour : lancez 'go mod tidy' et commitez le résultat"
+            exit 1
+          fi
 
       - name: Format check
         run: test -z "$(gofmt -l .)"
