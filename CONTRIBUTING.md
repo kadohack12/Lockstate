@@ -49,7 +49,7 @@ go build -o lockstate ./cmd/lockstate/
 - **Format** : Utilisez `gofmt` avant de commiter
 - **Tests** : Ajoutez des tests pour les nouvelles fonctionnalités
 - **Documentation** : Commentez les fonctions publiques
-- **Pas de dépendances externes** : Respectez la philosophie "zéro dépendance"
+- **Dépendances minimales** : zéro dépendance runtime ; toute nouvelle dépendance doit être justifiée dans la PR
 
 ## Questions ?
 

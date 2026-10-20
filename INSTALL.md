@@ -1,42 +1,27 @@
-# Installation Guide / Guide d'installation
+# Installation
 
-## 🚀 Installation utilisateur final
+Windows et Linux sont supportés. macOS compile, mais le binaire s'arrête avec « OS non supporté » : il n'y a pas encore de collecteur Darwin (voir la [roadmap](README.md#roadmap)).
 
-### Prérequis
-- ✅ Windows / Linux / macOS
-- ✅ Aucune dépendance externe requise
+## Option 1 : binaire (recommandé)
 
-### Option 1 : Télécharger le binaire (Recommandé)
-
-1. Allez sur [Releases](https://github.com/kadohack12/lockstate/releases)
-2. Téléchargez le binaire pour votre OS :
-   - `lockstate-X.X.X-windows-amd64.exe` (Windows)
-   - `lockstate-X.X.X-linux-amd64` (Linux)
-   - `lockstate-X.X.X-darwin-amd64` (macOS)
-
-3. Rendez-le exécutable et lancez-le :
-
-   **Linux / macOS** :
-   ```bash
-   chmod +x lockstate-*
-   ./lockstate-* --mode quick
-   ```
-
-   **Windows** :
-   ```powershell
-   .\lockstate-*.exe --mode quick
-   ```
-
-### Option 2 : Installer avec Go
-
-Si vous avez Go 1.22+ installé :
+1. Téléchargez le binaire de votre OS depuis les [Releases](https://github.com/kadohack12/lockstate/releases), avec le fichier `SHA256SUMS`.
+2. Vérifiez puis lancez :
 
 ```bash
-go install github.com/kadohack12/lockstate/cmd/lockstate@latest
-lockstate --mode quick
+# Linux
+sha256sum -c --ignore-missing SHA256SUMS
+chmod +x lockstate-*-linux-amd64
+./lockstate-*-linux-amd64 --mode quick
 ```
 
-### Option 3 : Compiler depuis les sources
+```powershell
+# Windows
+.\lockstate-0.1.0-windows-amd64.exe --mode quick
+```
+
+## Option 2 : depuis les sources
+
+Go 1.22+ requis.
 
 ```bash
 git clone https://github.com/kadohack12/lockstate.git
@@ -45,114 +30,30 @@ go build -o lockstate ./cmd/lockstate/
 ./lockstate --mode quick
 ```
 
----
+`go install github.com/kadohack12/lockstate/cmd/lockstate@latest` ne fonctionne pas : le module s'appelle `lockstate` dans `go.mod`, pas `github.com/kadohack12/lockstate`.
 
-## 📋 Premiers pas
-
-### Audit rapide
+## Utilisation
 
 ```bash
-lockstate --mode quick
+lockstate --mode quick                          # rapport HTML dans le répertoire courant
+lockstate --mode standard --output rapport.json # rapport JSON (selon l'extension)
+lockstate --mode deep --skip cve                # deep sans lookup CVE
+lockstate --update-cve                          # met à jour la base CVE locale puis quitte
 ```
 
-Sortie : rapport HTML dans le répertoire courant
+| Mode | Contenu |
+|---|---|
+| `quick` | Collecte système + détection |
+| `standard` | + scan de secrets |
+| `deep` | + scan étendu et lookup CVE (base requise : `--update-cve`) |
 
-### Modes d'audit
+`--skip` accepte `credentials` (alias `secrets`) et `cve`. Les codes de sortie (0, 1, 2, 3) sont décrits dans le [README](README.md#codes-de-sortie).
 
-- **quick** (< 2 min) : Vérifications essentielles uniquement
-- **standard** (< 10 min) : Audit complet sans lookup CVE approfondi
-- **deep** (> 30 min) : Scan exhaustif avec matching CVE détaillé
+## Dépannage
 
-```bash
-lockstate --mode standard --output ./rapport-complet.html
-```
+- **« base CVE introuvable »** (mode deep) : lancez `lockstate --update-cve`. La mise à jour respecte la limite de l'API NVD (~6,5 s par mot-clé), comptez quelques minutes.
+- **Pas de scan de secrets** : le mode `quick` ne le lance pas, utilisez `--mode standard` ou `deep`.
+- **Voir les logs** : `lockstate --mode quick 2>&1 | tee debug.log`
+- **Erreur de compilation** : vérifiez `go version` (1.22 minimum).
 
-### Options avancées
-
-```bash
-lockstate \
-  --mode deep \
-  --output ./rapport.html \
-  --config ./custom.yaml \
-  --skip "secrets,firewall"
-```
-
-### Mise à jour de la base CVE
-
-```bash
-lockstate --update-cve
-```
-
----
-
-## ❓ Dépannage
-
-### Permission denied (Linux/macOS)
-
-```bash
-chmod +x lockstate-*
-```
-
-### "Cannot find module" (compilation)
-
-```bash
-go mod tidy
-go build ./cmd/lockstate/
-```
-
-### Port already in use
-
-LockState n'ouvre pas de port. Vérifiez les autres processus :
-
-**Linux** : `netstat -tlnp | grep LISTEN`
-**Windows** : `netstat -ano | findstr LISTEN`
-**macOS** : `lsof -i -P -n`
-
-### Rapport vide
-
-- Vérifiez les droits d'accès sur les répertoires scannés
-- Augmentez le timeout : `--timeout 60`
-- Regardez les logs : `lockstate --mode quick 2>&1 | tee debug.log`
-
----
-
-## 📞 Besoin d'aide ?
-
-- 📖 [Documentation complète](docs/)
-- 💬 [Discussions](https://github.com/KADOHACK12/lockstate/discussions)
-- 🐛 [Issues](https://github.com/KADOHACK12/lockstate/issues)
-- 🔐 [Rapport de sécurité](SECURITY.md)
-
----
-
-## 📊 Cas d'usage
-
-### Pour les administrateurs système
-
-```bash
-lockstate --mode standard --output ./audit-$(date +%Y%m%d).html
-```
-
-### Pour les consultants en sécurité
-
-```bash
-lockstate --mode deep --output ./rapport-client.html
-```
-
-### Intégration CI/CD
-
-```bash
-lockstate --mode quick --quiet && echo "Sécurité : ✓ OK" || echo "Sécurité : ✗ Problèmes détectés"
-```
-
-### Monitoring régulier
-
-Utilisez un scheduler (cron, Task Scheduler Windows) :
-
-```bash
-0 2 * * * /usr/local/bin/lockstate --mode quick --output /var/reports/audit-$(date +\%Y\%m\%d).html
-```
-
----
-
-**Merci d'utiliser LockState ! 🔐**
+Un problème de sécurité ? Voir [SECURITY.md](SECURITY.md).

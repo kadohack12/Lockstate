@@ -19,7 +19,6 @@ cd lockstate
 
 ```bash
 go mod download
-go mod tidy
 ```
 
 ### 3. Compiler pour votre OS
@@ -35,10 +34,11 @@ go build -o lockstate.exe ./cmd/lockstate/
 Ou utiliser `make` :
 
 ```bash
-make all          # Compile pour Windows, Linux, macOS
+make all          # Compile pour Windows et Linux
 make windows      # Compilation Windows uniquement
 make linux        # Compilation Linux uniquement
-make darwin       # Compilation macOS uniquement
+make darwin       # Compile pour macOS, mais le binaire refuse de s'exécuter (pas de collecteur Darwin)
+make test         # go vet + go test
 make clean        # Nettoie les fichiers compilés
 ```
 
@@ -90,10 +90,10 @@ scripts/           → Scripts utilitaires
 go run ./cmd/lockstate/ --mode quick
 ```
 
-### Avec logs détaillés
+### Capturer les logs
 
 ```bash
-go run ./cmd/lockstate/ -v 2>&1 | tee debug.log
+go run ./cmd/lockstate/ --mode quick 2>&1 | tee debug.log
 ```
 
 ### Avec IDE VS Code

@@ -15,7 +15,8 @@ LockState
 ## Modules
 
 ### `collector` - Collecte système
-- `collector.go` : Interface principale
+- `collector.go` : Types et `Collect()`
+- `platform_*.go` : sélection du collecteur par build tag (linux, windows, autres)
 - `windows.go` : Collecte spécifique Windows (WMI, API Win32)
 - `linux.go` : Collecte spécifique Linux (/proc, iptables, etc.)
 
@@ -40,15 +41,13 @@ LockState
 ## Flux d'exécution
 
 ```
-1. Parsing des flags
-2. (Optionnel) Mise à jour CVE
-3. Collecte système
-4. Scan de secrets
-5. Détection de risques
-6. Lookup CVE
-7. Calcul du score
-8. Génération rapport
-9. Sauvegarde HTML
+1. Parsing des flags (`--update-cve` met à jour la base puis quitte)
+2. Collecte système
+3. Scan de secrets (standard et deep)
+4. Détection de risques
+5. Lookup CVE (deep)
+6. Calcul du score
+7. Génération du rapport (HTML ou JSON selon l'extension)
 ```
 
 ## Dépendances minimales
@@ -58,6 +57,6 @@ LockState
 
 ## Performance
 
-- **Mode quick** : Scan rapide, pas d'accès CVE
-- **Mode standard** : Scan complet + lookup CVE basique
-- **Mode deep** : Scan exhaustif + deep CVE matching
+- **Mode quick** : collecte système + détection, pas de scan de secrets ni de CVE
+- **Mode standard** : + scan de secrets
+- **Mode deep** : + scan étendu (profondeur 10, timeout 300 s) + lookup CVE

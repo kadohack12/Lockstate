@@ -4,12 +4,12 @@
 
 **Audit de sécurité local, offline, autonome.**
 
-Un binaire. Zéro dépendance. Aucune donnée ne quitte votre machine.
+Un binaire. Zéro dépendance à l'exécution. Aucune donnée ne quitte votre machine pendant l'audit.
 
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-blue?style=flat-square)]()
-[![Release](https://img.shields.io/github/v/release/kadohack12/lockstate?style=flat-square&color=orange)]()
+[![Platform](https://img.shields.io/badge/Platform-Windows%20|%20Linux-blue?style=flat-square)](#roadmap)
+[![Release](https://img.shields.io/github/v/release/kadohack12/lockstate?style=flat-square&color=orange)](https://github.com/kadohack12/lockstate/releases)
 
 </div>
 
@@ -23,8 +23,8 @@ LockState est l'inverse :
 
 | | Outils classiques | LockState |
 |---|---|---|
-| **Installation** | Agent + serveur + base de données | Un seul binaire (~5 Mo) |
-| **Dépendances** | Python, Java, Node.js... | Aucune |
+| **Installation** | Agent + serveur + base de données | Un seul binaire |
+| **Dépendances** | Python, Java, Node.js... | Aucune à l'exécution |
 | **Données** | Cloud / SaaS | 100% local — rien ne sort |
 | **Vitesse** | Minutes à heures | < 2 min (mode quick) |
 | **Cible** | Infrastructure réseau | Poste de travail / serveur unique |
@@ -34,19 +34,19 @@ LockState est l'inverse :
 ## Fonctionnalités
 
 ### 🔍 Collecte système
-- **Windows** : API Win32 directes, registre, `netstat`, BitLocker, logiciels installés
+- **Windows** : registre, `netstat`, `netsh`, BitLocker (`manage-bde`), logiciels installés
 - **Linux** : `/proc`, `/etc`, `iptables`/`ufw`, LUKS, `dpkg`/`rpm`
 
 ### 🗝️ Scanner de secrets
 - 13 patterns regex précis (clés privées, tokens API, mots de passe en clair)
-- Concurrence limitée avec timeout configurable
-- Snippets tronqués — **jamais de secret affiché en clair dans le rapport**
+- Concurrence limitée, timeout fixe (120 s ; 300 s en mode deep)
+- Extraits masqués — **la valeur d'un secret n'apparaît jamais dans le rapport**
 
 ### 🛡️ Détection de vulnérabilités
 - Pare-feu désactivé
 - Chiffrement disque absent ou partiel
 - Ports à haut risque ouverts (SMB, RDP, Telnet, Redis...)
-- Comptes administrateur actifs non légitimes
+- Comptes administrateur actifs (à vérifier manuellement)
 - Credentials en clair sur le filesystem
 
 ### 📦 Base CVE locale (SQLite)
@@ -58,13 +58,14 @@ LockState est l'inverse :
 ### 📊 Scoring pondéré
 - Score global 0–100 avec 6 catégories pondérées
 - Seuils d'alerte (critique, élevé, modéré, faible)
-- Poids configurables par catégorie
+- Poids par catégorie (fixes pour l'instant : `--config` n'est pas encore appliqué)
 
-### 📄 Rapport HTML autonome
+### 📄 Rapport HTML ou JSON
 - Template embarqué via `go:embed` — aucun fichier externe
 - Score visuel avec jauge colorée
 - Tableau détaillé par catégorie avec barres de progression
 - Alertes triées par sévérité
+- Export JSON : `--output rapport.json`
 
 ---
 
@@ -72,17 +73,18 @@ LockState est l'inverse :
 
 ### Option 1 : Télécharger le binaire (recommandé)
 
-1. Allez sur [Releases](https://github.com/kadohack12/lockstate/releases) et téléchargez le binaire correspondant à votre OS.
+1. Allez sur [Releases](https://github.com/kadohack12/lockstate/releases), téléchargez le binaire de votre OS et vérifiez-le avec `SHA256SUMS`.
 
 ```bash
-# Linux / macOS
-chmod +x lockstate
-./lockstate --mode quick
+# Linux
+sha256sum -c --ignore-missing SHA256SUMS
+chmod +x lockstate-*-linux-amd64
+./lockstate-*-linux-amd64 --mode quick
 ```
 
 ```powershell
 # Windows
-.\lockstate.exe --mode quick
+.\lockstate-0.1.0-windows-amd64.exe --mode quick
 ```
 
 ### Option 2 : Compiler depuis les sources
@@ -90,15 +92,15 @@ chmod +x lockstate
 ```bash
 git clone https://github.com/kadohack12/lockstate.git
 cd lockstate
-go mod tidy
 go build -o lockstate ./cmd/lockstate/
 ```
 
 ### Option 3 : Cross-compilation
 
 ```bash
-make all        # Compile pour Windows, Linux, macOS
+make all        # Compile pour Windows et Linux (macOS : voir la roadmap)
 make release    # + strip + UPX (binaire optimisé)
+make test       # go vet + go test
 ```
 
 ---
@@ -108,13 +110,13 @@ make release    # + strip + UPX (binaire optimisé)
 ### Modes d'audit
 
 ```bash
-# Quick — < 2 min (collecte système + détection basique)
+# Quick — collecte système + détection basique
 lockstate --mode quick
 
-# Standard — < 10 min (+ scan credentials)
+# Standard — + scan de secrets
 lockstate --mode standard
 
-# Deep — > 10 min (+ scan étendu + lookup CVE)
+# Deep — + scan étendu + lookup CVE (base locale requise : --update-cve)
 lockstate --mode deep
 ```
 
@@ -123,11 +125,12 @@ lockstate --mode deep
 | Flag | Description | Défaut |
 |---|---|---|
 | `--mode` | Mode d'audit : `quick`, `standard`, `deep` | `quick` |
-| `--output` | Chemin du rapport de sortie | `lockstate_report.html` |
-| `--skip` | Modules à ignorer (séparés par `,`) | _(aucun)_ |
-| `--update-cve` | Mettre à jour la base CVE locale depuis NVD | `false` |
-| `--config` | Fichier de configuration YAML | _(aucun)_ |
+| `--output` | Chemin du rapport (`.html` ou `.json`, selon l'extension) | `lockstate_report.html` |
+| `--skip` | Modules à ignorer, séparés par `,` : `credentials` (alias `secrets`), `cve` | _(aucun)_ |
+| `--update-cve` | Mettre à jour la base CVE locale depuis NVD, puis quitter | `false` |
+| `--config` | Fichier YAML — réservé : vérifié mais pas encore appliqué | _(aucun)_ |
 | `--quiet` | Mode silencieux (pas de logs) | `false` |
+| `--version` | Afficher la version | |
 
 ### Exemples concrets
 
@@ -150,6 +153,7 @@ lockstate --mode deep --output audit_$(date +%Y%m%d).html
 | `0` | Score ≥ 70 — Risque faible à modéré |
 | `1` | Score 40–69 — Risque élevé |
 | `2` | Score < 40 — Risque critique |
+| `3` | Erreur d'exécution (option invalide, collecte ou rapport impossible) |
 
 > Utile pour l'intégration dans des pipelines CI/CD ou des scripts d'automatisation.
 
@@ -170,13 +174,13 @@ Lors d'un incident, utilisez LockState pour dresser un état des lieux rapide : 
 Après avoir appliqué des mesures de durcissement (CIS Benchmarks, ANSSI...), relancez LockState pour mesurer l'amélioration du score.
 
 ### 🤖 Intégration CI/CD
-Grâce aux codes de sortie, LockState peut bloquer un pipeline si le score tombe en dessous d'un seuil.
+Tout code de sortie non nul fait échouer l'étape. Pour ne bloquer que sur un risque critique (code 2) :
 
 ```yaml
 - name: Security Audit
   run: |
-    ./lockstate --mode standard --quiet
-    # Exit code 2 = critique → pipeline bloqué
+    code=0; ./lockstate --mode standard --quiet || code=$?
+    [ "$code" -lt 2 ]   # 0 et 1 passent ; 2 (critique) et 3 (erreur) bloquent
 ```
 
 ---
@@ -187,9 +191,10 @@ Grâce aux codes de sortie, LockState peut bloquer un pipeline si le score tombe
 lockstate/
 ├── cmd/lockstate/main.go           # Orchestrateur CLI (4 phases)
 ├── internal/
-│   ├── collector/                  # Abstraction OS (Windows / Linux)
-│   │   ├── collector.go            # Types + routeur
-│   │   ├── windows.go              # Win32 API, registre, netstat
+│   ├── collector/                  # Abstraction OS (build tags)
+│   │   ├── collector.go            # Types + Collect()
+│   │   ├── platform_*.go           # Sélection du collecteur à la compilation
+│   │   ├── windows.go              # Registre, netstat, netsh
 │   │   └── linux.go                # /proc, /etc, dpkg/rpm
 │   ├── scanner/
 │   │   └── filesystem.go           # Scanner credentials (13 regex)
@@ -227,7 +232,7 @@ lockstate/
 | [`golang.org/x/sys`](https://pkg.go.dev/golang.org/x/sys) | API Windows (registre, syscalls) | Officiel Go, nécessaire pour les appels Win32 |
 | [`modernc.org/sqlite`](https://pkg.go.dev/modernc.org/sqlite) | Base CVE locale | Pur Go, pas de CGO, binaire 100% portable |
 
-**Zéro framework. Zéro dépendance runtime. Binaire statique de ~5 Mo.**
+**Zéro framework. Zéro dépendance runtime : un binaire statique, sans CGO.**
 
 ---
 
@@ -274,7 +279,9 @@ Ajoutez votre regex dans `internal/scanner/filesystem.go` :
 - [x] Scoring pondéré (6 catégories)
 - [x] Rapport HTML embarqué (go:embed)
 - [ ] Collecteur macOS (Darwin)
-- [ ] Export JSON / PDF
+- [x] Export JSON
+- [ ] Export PDF
+- [x] Tests unitaires + CI (vet cross-OS, gofmt, `go test -race`)
 - [ ] Mode comparaison (diff entre deux audits)
 - [ ] Règles CIS Benchmark
 - [ ] Support des API keys NVD (rate-limit x10)

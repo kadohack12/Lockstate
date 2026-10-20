@@ -6,7 +6,7 @@ Si vous découvrez une faille de sécurité dans LockState, **ne l'ouvrez pas pu
 
 ### Contactez-nous en privé
 
-1. Envoyez un email détaillé à : **[À COMPLÉTER : votre email]**
+1. Utilisez le signalement privé de GitHub : onglet **Security** → **Report a vulnerability** du dépôt
 2. Incluez :
    - Description de la vulnérabilité
    - Étapes pour reproduire
@@ -24,6 +24,6 @@ Si vous découvrez une faille de sécurité dans LockState, **ne l'ouvrez pas pu
 ## Responsable de la Sécurité
 
 - **Mainteneur** : KADOHACK12
-- **Email** : [À COMPLÉTER]
+- **Contact** : signalement privé GitHub (voir ci-dessus)
 
 Merci de votre responsabilité ! 🙏
