@@ -158,7 +158,9 @@ func UpdateDatabase() error {
 	}
 
 	// 4. Mettre à jour le timestamp
-	setLastModified(db, time.Now().UTC().Format(time.RFC3339))
+	if err := setLastModified(db, time.Now().UTC().Format(time.RFC3339)); err != nil {
+		log.Printf("  ⚠ horodatage de mise à jour non enregistré : %v", err)
+	}
 
 	log.Printf("Mise à jour terminée : %d CVE importées au total", totalInserted)
 	return nil
@@ -219,7 +221,7 @@ func fetchAndStore(db *sql.DB, keyword, lastModified string) (int, error) {
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback() // l'erreur d'origine est plus utile que celle du rollback
 		return 0, err
 	}
 	defer stmt.Close()
@@ -314,8 +316,9 @@ func getLastModified(db *sql.DB) string {
 	return val
 }
 
-func setLastModified(db *sql.DB, val string) {
-	db.Exec("INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_modified', ?)", val)
+func setLastModified(db *sql.DB, val string) error {
+	_, err := db.Exec("INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_modified', ?)", val)
+	return err
 }
 
 func min(a, b int) int {

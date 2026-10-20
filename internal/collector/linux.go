@@ -4,7 +4,6 @@ package collector
 
 import (
 	"bufio"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -34,7 +33,7 @@ func collectLinux(info *SystemInfo) error {
 }
 
 func getLinuxOSRelease() string {
-	data, err := ioutil.ReadFile("/etc/os-release")
+	data, err := os.ReadFile("/etc/os-release")
 	if err != nil {
 		return "unknown"
 	}
@@ -50,7 +49,7 @@ func getLinuxOSRelease() string {
 }
 
 func getLinuxKernel() string {
-	data, err := ioutil.ReadFile("/proc/version")
+	data, err := os.ReadFile("/proc/version")
 	if err != nil {
 		return "unknown"
 	}
@@ -62,7 +61,7 @@ func getLinuxKernel() string {
 }
 
 func getLinuxUptime() time.Duration {
-	data, err := ioutil.ReadFile("/proc/uptime")
+	data, err := os.ReadFile("/proc/uptime")
 	if err != nil {
 		return 0
 	}
@@ -75,7 +74,7 @@ func getLinuxUptime() time.Duration {
 }
 
 func getLinuxUsers() []UserInfo {
-	passwd, err := ioutil.ReadFile("/etc/passwd")
+	passwd, err := os.ReadFile("/etc/passwd")
 	if err != nil {
 		return nil
 	}
@@ -111,7 +110,7 @@ func getLinuxAdmins() []string {
 	var admins []string
 
 	for _, group := range []string{"sudo", "wheel", "admin"} {
-		data, err := ioutil.ReadFile("/etc/group")
+		data, err := os.ReadFile("/etc/group")
 		if err != nil {
 			continue
 		}
@@ -196,7 +195,7 @@ func getLinuxServices() []ServiceInfo {
 }
 
 func getLinuxPorts() []PortInfo {
-	tcpData, err := ioutil.ReadFile("/proc/net/tcp")
+	tcpData, err := os.ReadFile("/proc/net/tcp")
 	if err != nil {
 		return nil
 	}
@@ -258,7 +257,7 @@ func getLinuxFirewall() FirewallState {
 		}
 	}
 
-	data, err := ioutil.ReadFile("/etc/ufw/ufw.conf")
+	data, err := os.ReadFile("/etc/ufw/ufw.conf")
 	if err == nil {
 		if strings.Contains(string(data), "ENABLED=yes") {
 			state.Enabled = true
@@ -272,7 +271,7 @@ func getLinuxFirewall() FirewallState {
 func getLinuxEncryption() EncryptionInfo {
 	info := EncryptionInfo{Type: "luks"}
 
-	data, err := ioutil.ReadFile("/etc/crypttab")
+	data, err := os.ReadFile("/etc/crypttab")
 	if err == nil && strings.TrimSpace(string(data)) != "" {
 		lines := strings.Split(string(data), "\n")
 		for _, line := range lines {
@@ -292,7 +291,7 @@ func getLinuxEncryption() EncryptionInfo {
 func getLinuxPatches() []PatchInfo {
 	var patches []PatchInfo
 
-	data, err := ioutil.ReadFile("/var/log/apt/history.log")
+	data, err := os.ReadFile("/var/log/apt/history.log")
 	if err == nil {
 		scanner := bufio.NewScanner(strings.NewReader(string(data)))
 		var lastUpgrade string

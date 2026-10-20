@@ -90,7 +90,9 @@ func generateHTML(sysInfo *collector.SystemInfo, score *scoring.ScoreResult, out
 	}
 
 	// Ensure target directory exists
-	os.MkdirAll(filepath.Dir(outputPath), 0755)
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+		return err
+	}
 
 	f, err := os.Create(outputPath)
 	if err != nil {
@@ -104,7 +106,9 @@ func generateHTML(sysInfo *collector.SystemInfo, score *scoring.ScoreResult, out
 // generateJSON génère un rapport au format JSON
 func generateJSON(sysInfo *collector.SystemInfo, score *scoring.ScoreResult, outputPath string) error {
 	// Ensure target directory exists
-	os.MkdirAll(filepath.Dir(outputPath), 0755)
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+		return err
+	}
 
 	type JSONReport struct {
 		Hostname         string                `json:"hostname"`

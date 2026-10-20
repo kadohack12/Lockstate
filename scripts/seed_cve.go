@@ -40,7 +40,9 @@ type testCVE struct {
 }
 
 func main() {
-	os.MkdirAll("data", 0755)
+	if err := os.MkdirAll("data", 0o755); err != nil {
+		log.Fatal(err)
+	}
 
 	db, err := sql.Open("sqlite", "data/cve.db")
 	if err != nil {
@@ -146,8 +148,14 @@ func main() {
 	}
 
 	// Metadata
-	db.Exec("INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_modified', '2024-12-01T00:00:00Z')")
-	db.Exec("INSERT OR REPLACE INTO metadata (key, value) VALUES ('source', 'seed_script')")
+	for _, q := range []string{
+		"INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_modified', '2024-12-01T00:00:00Z')",
+		"INSERT OR REPLACE INTO metadata (key, value) VALUES ('source', 'seed_script')",
+	} {
+		if _, err := db.Exec(q); err != nil {
+			log.Fatalf("Erreur metadata : %v", err)
+		}
+	}
 
 	fmt.Printf("\n✓ Base CVE de test créée : data/cve.db (%d entrées)\n", len(cves))
 }
